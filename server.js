@@ -11,7 +11,7 @@ app.get('/', function (req, res) {
 })
 
 //from express-graphql repo MOUNT onto /graphql
-app.use('/graphql', graphQLHTTP({schema: Schema, graphiql: false}))
+app.use('/graphql', graphQLHTTP({schema: Schema, graphiql: true }))
 
 
 app.listen(3010, function () {
