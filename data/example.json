@@ -1,0 +1,70 @@
+{
+	"meeting": {
+		"racedate": "20170614",
+		"racecourse": "HV",
+		"noraces": "8",
+		"races": [{
+				"racenumber": "1",
+				"runners": [{
+						"horse": "T333",
+						"price": 31
+					},
+					{
+						"horse": "S245",
+						"price": 48
+					},
+					{
+						"horse": "T056",
+						"price": 60
+					},
+					{
+						"horse": "V119",
+						"price": 180
+					}
+				]
+			},
+			{
+				"racenumber": 2,
+				"runners": [{
+						"horse": "V164",
+						"price": 33
+					},
+					{
+						"horse": "T369",
+						"price": 79
+					},
+					{
+						"horse": "N432",
+						"price": 230
+					},
+					{
+						"horse": "V171",
+						"price": 190
+					}
+				]
+			},
+			{
+				"racenumber": 4,
+				"runners": [{
+						"horse": "S216",
+						"price": 300
+					},
+					{
+						"horse": "A051",
+						"price": 22
+					},
+					{
+						"horse": "T0334",
+						"price": 82
+					},
+					{
+						"horse": "S397",
+						"price": 79
+					}
+				]
+			}
+
+		]
+
+	}
+}
