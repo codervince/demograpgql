@@ -7,6 +7,7 @@ import WebpackDevServer from 'webpack-dev-server';
 import {clean} from 'require-clean';
 import {exec} from 'child_process';
 import config from './webpack.config';
+import schemaFunc from "./data/schema";
 
 const APP_PORT = 3000;
 const GRAPHQL_PORT = 8080;
@@ -33,15 +34,14 @@ function startAppServer(callback) {
   });
 }
 
-function startGraphQLServer(callback) {
+function startGraphQLServer(db,callback) {
   // Expose a GraphQL endpoint
-  clean('./data/schema');
-  const {Schema} = require('./data/schema');
+  // clean('./data/schema');
   const graphQLApp = express();
   graphQLApp.use('/', graphQLHTTP({
     graphiql: true,
     pretty: true,
-    schema: Schema,
+    schema: schemaFunc(db) //going to fail!
   }));
   graphQLServer = graphQLApp.listen(GRAPHQL_PORT, () => {
     console.log(
@@ -53,7 +53,7 @@ function startGraphQLServer(callback) {
   });
 }
 
-function startServers(callback) {
+function startServers(db,callback) {
   // Shut down the servers
   if (appServer) {
     appServer.listeningApp.close();
@@ -72,7 +72,7 @@ function startServers(callback) {
         callback();
       }
     }
-    startGraphQLServer(handleTaskDone);
+    startGraphQLServer(db,handleTaskDone);
     startAppServer(handleTaskDone);
   });
 }
@@ -83,4 +83,19 @@ watcher.on('change', path => {
     console.log('Restart your browser to use the updated schema.')
   );
 });
-startServers();
+
+// add mongodb code
+
+var MongoClient = require('mongodb').MongoClient
+  , assert = require('assert');
+
+  // Use connect method to connect to the server
+MongoClient.connect(process.env.MONGO_URI, function(err, db) {
+
+    assert.equal(null, err);
+
+    console.log("Connected successfully to server");
+
+    startServers(db);
+
+});

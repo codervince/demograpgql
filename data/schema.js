@@ -1,12 +1,3 @@
-/**
- *  Copyright (c) 2015, Facebook, Inc.
- *  All rights reserved.
- *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
- */
-
 import {
   GraphQLBoolean,
   GraphQLFloat,
@@ -17,127 +8,159 @@ import {
   GraphQLObjectType,
   GraphQLSchema,
   GraphQLString,
-} from 'graphql';
+} from 'graphql'; //from reference implementation
+import { GraphQLDate} from 'graphql-scalars';
 
-import {
-  connectionArgs,
-  connectionDefinitions,
-  connectionFromArray,
-  fromGlobalId,
-  globalIdField,
-  mutationWithClientMutationId,
-  nodeDefinitions,
-} from 'graphql-relay';
 
-import {
-  // Import methods that your schema can use to interact with your database
-  User,
-  Widget,
-  getUser,
-  getViewer,
-  getWidget,
-  getWidgets,
-} from './database';
 
-/**
- * We get the node interface and field from the Relay library.
- *
- * The first method defines the way we resolve an ID to its object.
- * The second defines the way we resolve an object to its GraphQL type.
- */
-var {nodeInterface, nodeField} = nodeDefinitions(
-  (globalId) => {
-    var {type, id} = fromGlobalId(globalId);
-    if (type === 'User') {
-      return getUser(id);
-    } else if (type === 'Widget') {
-      return getWidget(id);
-    } else {
-      return null;
-    }
-  },
-  (obj) => {
-    if (obj instanceof User) {
-      return userType;
-    } else if (obj instanceof Widget)  {
-      return widgetType;
-    } else {
-      return null;
-    }
-  }
-);
 
-/**
- * Define your own types here
- */
+//JS trick
+let schemaFunc = (db) => {
 
-var userType = new GraphQLObjectType({
-  name: 'User',
-  description: 'A person who uses our app',
-  fields: () => ({
-    id: globalIdField('User'),
-    widgets: {
-      type: widgetConnection,
-      description: 'A person\'s collection of widgets',
-      args: connectionArgs,
-      resolve: (_, args) => connectionFromArray(getWidgets(), args),
-    },
-  }),
-  interfaces: [nodeInterface],
-});
+      // new container object bc cannot start with an array
+      // let storeType = new GraphQLObjectType({
+      //   name: 'Store',
+      //   fields: {
+      //     store: { type: new GraphQLObjectType({
+      //       name: 'Store',
+      //       fields: {
+      //
+      //       }
+      //     })}
+      //   }
+      // })
 
-var widgetType = new GraphQLObjectType({
-  name: 'Widget',
-  description: 'A shiny widget',
-  fields: () => ({
-    id: globalIdField('Widget'),
-    name: {
-      type: GraphQLString,
-      description: 'The name of the widget',
-    },
-  }),
-  interfaces: [nodeInterface],
-});
+      function getDecimalPrice(numerator, denominator){
+        return (numerator+denominator)/denominator;
+      }
 
-/**
- * Define your own connection types here
- */
-var {connectionType: widgetConnection} =
-  connectionDefinitions({name: 'Widget', nodeType: widgetType});
+      //func reference
+      let fractional2Decimal = function(p){
+        p = ((p/10)+1).toString() + '/1'
+        return p;
+      }
 
-/**
- * This is the type that will be the root of our query,
- * and the entry point into our schema.
- */
-var queryType = new GraphQLObjectType({
-  name: 'Query',
-  fields: () => ({
-    node: nodeField,
-    // Add your own root fields here
-    viewer: {
-      type: userType,
-      resolve: () => getViewer(),
-    },
-  }),
-});
+      let runnerType = new GraphQLObjectType({
+        name: 'Runner',
+        description: 'Horse data for race',
+        fields: {
+          _id: {
+            type: GraphQLString
+          },
+          horse: {type: GraphQLString},
+          price: {type: GraphQLInt},
+          decimalPrice: {type: GraphQLInt,
+            resolve: (horse) => horse.price
+          },
+          englishPrice: { type: GraphQLString,
+          resolve: (horse)=> fractional2Decimal(horse.price) }
+        }
+      });
 
-/**
- * This is the type that will be the root of our mutations,
- * and the entry point into performing writes in our schema.
- */
-var mutationType = new GraphQLObjectType({
-  name: 'Mutation',
-  fields: () => ({
-    // Add your own mutations here
-  })
-});
+      let raceType =new GraphQLObjectType({
+        name: 'Race',
+        description: 'race-specific information',
+        fields: {
+          raceindex: {type: GraphQLString},
+          racenumber: {type: GraphQLInt},
+          runners: {type: new GraphQLList(runnerType)}
+        }
+      });
 
-/**
- * Finally, we construct our schema (whose starting query type is the query
- * type we defined above) and export it.
- */
-export var Schema = new GraphQLSchema({
-  query: queryType,
-  // Uncomment the following after adding some mutation fields:
-  // mutation: mutationType
-});
+      let meetingType =new GraphQLObjectType({
+        name: 'Meeting',
+        description: 'Meet information',
+        fields: {
+            _id: {
+              type: GraphQLString
+            },
+            racedate: {type: GraphQLString},
+            racecourse: {type: GraphQLString},
+            noraces: {type: GraphQLInt},
+            races: {type: new GraphQLList(raceType)}
+            }
+        });
+
+
+
+      // let meetingListType =new GraphQLObjectType({
+      //   name: 'MeetingList',
+      //   description: 'List of Meetings',
+      //   fields: {
+      //       meetings: {type: new GraphQLList(meetingType)}
+      //       }
+      //   });
+
+      let storeType = new GraphQLObjectType({
+        name: 'Store',
+        fields: {
+
+            // meetings: {
+            //   type: new GraphQLList(meetingType),
+            //   resolve(_, args) {
+            //       return db.collection("HKJCruns").find({}).toArray(); //returns Promise taken care of automagically
+            //   }
+            // }
+            meetings: {
+              //or meetingType?
+                type: new GraphQLList(meetingType),
+                description: "Return a list of meetings in any case - todo: arguments array of horses - Takes 2 arguments: racedate & racecourse - must be unique - returns all the meeting, race, runner data for that event",
+                args: {
+                  racedate : {type:GraphQLString },
+                  racecourse : {type:GraphQLString }
+                },
+                resolve(_, args) {
+                  return db.collection("HKJCruns").find({}).toArray();
+                  // presently we only have 1 event stored later remove this condition
+                  //change this to a list of horsecodes
+                  // if (args.racedate == '20170614' && args.racecourse =='HV') {
+                  //   return db.collection("HKJCruns").find({}).toArray(); //returns Promise taken care of automagically
+                  // }else {
+                  //   return [`nothing here yet for ${args.racedate} - ${args.racecourse} - ${args.racenumber}`]; //dummy string
+                  //   }
+                }
+              }
+
+
+        }
+      });
+
+
+
+        let store = {}; //can be anything
+
+        var schema = new GraphQLSchema({
+            query: new GraphQLObjectType({
+              name: 'RootQueryType', //required
+
+              fields: { //required
+                  store: {
+                    type: storeType,
+                    resolve: () => store
+                  }
+                  // meetings: {
+                  //     type: new GraphQLList(meetingListType),
+                  //     description: "Return a list of meetings in any case - todo: arguments array of horses - Takes 2 arguments: racedate & racecourse - must be unique - returns all the meeting, race, runner data for that event",
+                  //     args: {
+                  //       racedate : {type:GraphQLString },
+                  //       racecourse : {type:GraphQLString }
+                  //     },
+                  //     resolve(_, args) {
+                  //       // presently we only have 1 event stored later remove this condition
+                  //       if (args.racedate == '20170614' && args.racecourse =='HV') {
+                  //         return db.collection("HKJCruns").find({}).toArray(); //returns Promise taken care of automagically
+                  //       }else {
+                  //         return [`nothing here yet for ${args.racedate} - ${args.racecourse} - ${args.racenumber}`]; //dummy string
+                  //         }
+                  //     }
+                  //   }
+
+              }//end fields
+          })
+        });
+
+      return schema;
+};
+
+
+export default schemaFunc;
